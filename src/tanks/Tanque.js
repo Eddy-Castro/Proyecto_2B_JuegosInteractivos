@@ -23,6 +23,27 @@ class TanqueBase extends Phaser.Physics.Arcade.Sprite {
     }
     this.tiempoUltimoDisparo = 0;
     this.cadenciaMs = 400;
+
+    // Modificadores de velocidad que COMPONEN (no se pisan): el barro (Nivel 3)
+    // y las minas escriben estos flags y llaman aplicarModificadores(), en vez
+    // de tocar setMaxVelocity() directamente y cancelarse mutuamente.
+    this.enBarro = false;
+    this.ralentizadoMina = false;
+  }
+
+  // Recalcula la velocidad y el tinte a partir de TODOS los modificadores activos.
+  // Es la única vía por la que el barro y las minas modifican la velocidad.
+  aplicarModificadores() {
+    const base = this.velocidadMaximaBase || 350;
+    const factorBarro = this.enBarro ? 0.45 : 1;
+    const factorMina = this.ralentizadoMina ? 0.2 : 1;
+    this.setMaxVelocity(base * factorBarro * factorMina);
+
+    // Tinte de estado (la identidad del jugador va por anillo, no por tinte):
+    // el barro tiene prioridad visual sobre la mina (ambos son marrones).
+    if (this.enBarro) this.setTint(0x8a6a44);
+    else if (this.ralentizadoMina) this.setTint(0x996644);
+    else this.clearTint();
   }
 
   actualizar() {

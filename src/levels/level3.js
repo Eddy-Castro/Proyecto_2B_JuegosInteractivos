@@ -254,13 +254,13 @@ class Level3 extends Phaser.Scene {
 
       if (enBarro && !t.estabaEnBarro) {
         t.setDrag(800);
-        t.setMaxVelocity((t.velocidadMaximaBase || 350) * 0.45);
-        t.setTint(0x8a6a44); // el tanque se ve embarrado
+        t.enBarro = true;
+        t.aplicarModificadores(); // compone con la mina si está activa
         t.estabaEnBarro = true;
       } else if (!enBarro && t.estabaEnBarro) {
         t.setDrag(50);
-        t.setMaxVelocity(t.velocidadMaximaBase || 350);
-        t.clearTint();
+        t.enBarro = false;
+        t.aplicarModificadores(); // no cancela la mina: recalcula con sus flags
         t.estabaEnBarro = false;
       }
 

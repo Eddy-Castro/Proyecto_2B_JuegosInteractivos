@@ -50,15 +50,16 @@ class MinaOxido extends Phaser.Physics.Arcade.Sprite {
       onComplete: () => humo.destroy(),
     });
 
-    // EFECTO: ralentiza al enemigo 3 segundos
-    const velNormal = jugador.velocidadMaximaBase || 350;
-    jugador.setMaxVelocity(velNormal * 0.2);
-    jugador.setTint(0x996644);
+    // EFECTO: ralentiza al enemigo 3 segundos. Componemos con el barro (flag +
+    // aplicarModificadores) en vez de sobrescribir maxVelocity, que se cancelaba
+    // con gestionarBarro() del Nivel 3.
+    jugador.ralentizadoMina = true;
+    jugador.aplicarModificadores();
 
     escena.time.delayedCall(3000, () => {
       if (!jugador.active || !jugador.body) return;
-      jugador.setMaxVelocity(velNormal);
-      jugador.clearTint();
+      jugador.ralentizadoMina = false;
+      jugador.aplicarModificadores();
     });
 
     this.destroy();
