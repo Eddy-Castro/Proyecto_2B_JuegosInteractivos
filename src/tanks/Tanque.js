@@ -11,11 +11,13 @@ class TanqueBase extends Phaser.Physics.Arcade.Sprite {
     this.velocidadRotacion = 0;
     this.aceleracion = 0;
 
-    this.bala = new Bala(scene, 0, 0, "dummy_bullet");
+    this.bala = new Bala(scene, 0, 0, "bala");
     this.bala.desactivar();
   }
 
   actualizar() {
+    if (!this.teclas || !this.body) return;
+
     if (this.teclas.izquierda.isDown) {
       this.setAngularVelocity(-this.velocidadRotacion);
     } else if (this.teclas.derecha.isDown) {
@@ -152,6 +154,38 @@ class TanqueAzul extends TanqueBase {
         this.esInvulnerable = false;
       });
       this.tiempoHabilidad = this.scene.time.now + 3000;
+    }
+  }
+}
+
+class TanqueVerde extends TanqueBase {
+  constructor(scene, x, y, texture) {
+    super(scene, x, y, texture);
+
+    this.setMaxVelocity(350);
+    this.setDrag(50);
+    this.velocidadRotacion = 250;
+    this.aceleracion = 400;
+
+    this.tiempoHabilidad = 0;
+
+    this.teclas = scene.input.keyboard.addKeys({
+      arriba: Phaser.Input.Keyboard.KeyCodes.W,
+      abajo: Phaser.Input.Keyboard.KeyCodes.S,
+      izquierda: Phaser.Input.Keyboard.KeyCodes.A,
+      derecha: Phaser.Input.Keyboard.KeyCodes.D,
+      disparo: Phaser.Input.Keyboard.KeyCodes.SPACE,
+    });
+
+    scene.input.keyboard.on("keydown-SPACE", this.intentarDisparo, this);
+    scene.input.keyboard.on("keydown-E", this.colocarMina, this);
+  }
+
+  colocarMina() {
+    if (this.scene.time.now > this.tiempoHabilidad) {
+      const mina = new MinaOxido(this.scene, this.x, this.y);
+      this.scene.minas.add(mina);
+      this.tiempoHabilidad = this.scene.time.now + 8000;
     }
   }
 }

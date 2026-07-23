@@ -19,13 +19,29 @@
   </head>
   <body>
     <div id="game-container"></div>
+
+    <!-- 1. Entidades base -->
     <script src="src/tanks/Bala.js"></script>
+    <script src="src/entities/MuroTrinchera.js"></script>
+    <script src="src/entities/Teletransportador.js"></script>
+    <script src="src/entities/MinaOxido.js"></script>
+
+    <!-- 2. Tanques (TanqueBase primero, luego las subclases: todo va en Tanque.js) -->
     <script src="src/tanks/Tanque.js"></script>
-    <script src="src/tanks/skills.js"></script>
-    <script src="src/menu.js"></script>
+
+    <!-- 3. Sistemas -->
+    <script src="src/audio/AudioManager.js"></script>
+
+    <!-- 4. Escenas -->
     <script src="src/BootScene.js"></script>
+    <script src="src/menu.js"></script>
     <script src="src/levels/level1.js"></script>
+    <script src="src/levels/level2.js"></script>
+    <script src="src/levels/level3.js"></script>
+    <script src="src/ui/UIScene.js"></script>
     <script src="src/GameOver.js"></script>
+
+    <!-- 5. Arranque (siempre al final) -->
     <script src="main.js"></script>
   </body>
 </html>

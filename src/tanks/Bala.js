@@ -11,6 +11,8 @@ class Bala extends Phaser.Physics.Arcade.Sprite {
   }
 
   disparar(x, y, angulo) {
+    if (!this.body) return; // blindaje: nunca operar sobre un cuerpo destruido
+
     this.setActive(true);
     this.setVisible(true);
     this.setPosition(x, y);
@@ -29,8 +31,15 @@ class Bala extends Phaser.Physics.Arcade.Sprite {
   }
 
   desactivar() {
+    if (!this.body) return; // blindaje
+
     this.setActive(false);
     this.setVisible(false);
     this.body.stop();
+
+    if (this.tiempoVida) {
+      this.tiempoVida.remove();
+      this.tiempoVida = null;
+    }
   }
 }

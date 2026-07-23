@@ -11,14 +11,8 @@ class Level1 extends Phaser.Scene {
     this.load.tilemapTiledJSON("mapa_nivel1", "resources/maps/mapa_nuevo.json");
     this.load.image("tanque_rojo", "resources/img/tanqueRojo.png");
     this.load.image("tanque_azul", "resources/img/tanqueAzul.png");
-    this.load.image(
-      "caja_destructible",
-      "https://labs.phaser.io/assets/sprites/block.png",
-    );
-    this.load.image(
-      "muro_habilidad",
-      "https://labs.phaser.io/assets/sprites/platform.png",
-    );
+    this.load.image("caja_destructible", "resources/img/caja.png");
+    this.load.image("muro_habilidad", "resources/img/muro.png");
   }
 
   create() {
@@ -239,7 +233,6 @@ class Level1 extends Phaser.Scene {
     // Ya no da puntos ni termina el juego, solo funciona como cobertura destructible
     caja.destroy();
     bala.desactivar();
-    bala.destroy(); // Destruye la bala para evitar rebotes infinitos
   }
 
   impactoJugador(bala, victima) {
@@ -252,7 +245,6 @@ class Level1 extends Phaser.Scene {
     // Efectos de destrucción
     victima.disableBody(true, true);
     bala.desactivar();
-    bala.destroy(); // Destruye la bala para evitar rebotes infinitos
 
     // Registrar quién fue destruido
     if (victima === this.jugador) this.rojoMuerto = true;
