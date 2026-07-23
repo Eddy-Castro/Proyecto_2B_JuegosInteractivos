@@ -4,10 +4,12 @@ class GameOverScene extends Phaser.Scene {
   }
 
   create() {
+    const cx = this.scale.width / 2; // 640
+    const cy = this.scale.height / 2; // 480
     const puntajeFinal = this.registry.get("puntuacion") || 0;
 
     this.add
-      .text(400, 200, "FIN DE LA PARTIDA", {
+      .text(cx, cy - 180, "FIN DE LA PARTIDA", {
         fontSize: "48px",
         fill: "#ff0000",
         fontStyle: "bold",
@@ -15,14 +17,14 @@ class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(400, 300, "Puntaje Total: " + puntajeFinal, {
+      .text(cx, cy - 60, "Puntaje Total: " + puntajeFinal, {
         fontSize: "32px",
         fill: "#ffffff",
       })
       .setOrigin(0.5);
 
     const btnMenu = this.add
-      .text(400, 450, "[ VOLVER AL MENÚ ]", {
+      .text(cx, cy + 120, "[ VOLVER AL MENÚ ]", {
         fontSize: "24px",
         fill: "#ffff00",
       })

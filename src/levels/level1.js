@@ -46,9 +46,9 @@ class Level1 extends Phaser.Scene {
 
     // --- OBJETOS DE ESCENA ---
     this.muros = this.physics.add.staticGroup();
-    // this.cajas = this.physics.add.staticGroup();
-    // this.cajas.create(300, 300, "caja_destructible");
-    // this.cajas.create(500, 200, "caja_destructible");
+    this.cajas = this.physics.add.staticGroup();
+    this.cajas.create(300, 300, "caja_destructible");
+    this.cajas.create(500, 200, "caja_destructible");
 
     // --- JUGADOR 1 (ROJO) ---
     const puntoSpawnRojo = this.obtenerPuntoSpawnValido(mapa, this.capaParedes);

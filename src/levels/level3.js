@@ -11,10 +11,7 @@ class Level3 extends Phaser.Scene {
       "resources/img/spritesheet-tiles-default.png",
     );
     this.load.tilemapTiledJSON("mapa_nivel3", "resources/maps/mapa3.json");
-    this.load.image(
-      "tanque_verde",
-      "resources/img/tanqueVerde - copia.png",
-    );
+    this.load.image("tanque_verde", "resources/img/tanqueVerde.png");
     this.load.image("mina", "resources/img/mina.png");
   }
 
