@@ -48,11 +48,25 @@ class Level2 extends Phaser.Scene {
     this.capaParedes = capaParedes;
 
     // --- PORTALES ---
+    // Coordenadas de TILE (col, fila), no en píxeles: más mantenible y fácil
+    // de verificar contra el ASCII de MAPA2 en tools/generar_mapa.py.
+    const T = 64;
+    const MITAD = 32;
+    const aMundo = (col, fila) => ({ x: col * T + MITAD, y: fila * T + MITAD });
+
+    // VERIFICADO contra MAPA2 con tools/validar_mapa.py: los 4 tiles están libres
+    const PARES_PORTAL = [
+      [{ col: 1, fila: 1 }, { col: 18, fila: 13 }], // Par A: esquina sup-izq <-> inf-der
+      [{ col: 18, fila: 1 }, { col: 1, fila: 13 }], // Par B: esquina sup-der <-> inf-izq
+    ];
+
     this.portales = this.physics.add.staticGroup();
-    const portalA = new Teletransportador(this, 150, 450, 650, 150);
-    const portalB = new Teletransportador(this, 650, 150, 150, 450);
-    this.portales.add(portalA);
-    this.portales.add(portalB);
+    PARES_PORTAL.forEach(([a, b]) => {
+      const pa = aMundo(a.col, a.fila);
+      const pb = aMundo(b.col, b.fila);
+      this.portales.add(new Teletransportador(this, pa.x, pa.y, pb.x, pb.y));
+      this.portales.add(new Teletransportador(this, pb.x, pb.y, pa.x, pa.y));
+    });
 
     // --- JUGADOR 1 (ROJO) y JUGADOR 2 (AZUL) ---
     const spawnA = obtenerPuntoSpawnValido(mapa, capaParedes);

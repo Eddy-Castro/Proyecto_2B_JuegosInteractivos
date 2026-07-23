@@ -54,23 +54,28 @@ def generar(ruta_salida, filas, capas_extra=None):
     print(f"OK -> {ruta_salida}  ({w}x{h}, {libres} tiles libres)")
 
 
-# ---------- NIVEL 2: "Sindicato de Neón" — cámaras separadas por bandas de muros ----------
-# VALIDADO: 20x15 · simetría rotacional 180° · 174 tiles libres · 0 zonas aisladas · 0 callejones
+# ---------- NIVEL 2: "Sindicato de Neón" — 4 cámaras cerradas en las esquinas
+# (spawns + portales) unidas por pasillos rectos de 2 tiles de ancho, más una
+# cámara central colgante accesible solo desde los pasillos norte/sur.
+# Contraste deliberado con el Nivel 1 (campo abierto): aquí no hay línea de
+# visión larga salvo a lo largo de un pasillo.
+# VALIDADO: 20x15 · simetría rotacional 180° · 0 tiles aislados · 0 callejones
+# · portales (1,1)<->(18,13) y (18,1)<->(1,13) verificados libres
 MAPA2 = [
     "####################",
+    "#....####==####....#",
     "#..................#",
-    "#.##..==....==..##.#",
-    "#.##..==....==..##.#",
-    "#..................#",
-    "#...#####..#####...#",
     "#..................#",
     "#....####..####....#",
+    "##..#===#..#===#..##",
+    "##..#===....===#..##",
+    "##..#===....===#..##",
+    "##..#===....===#..##",
+    "##..#===#..#===#..##",
+    "#....####..####....#",
     "#..................#",
-    "#...#####..#####...#",
     "#..................#",
-    "#.##..==....==..##.#",
-    "#.##..==....==..##.#",
-    "#..................#",
+    "#....####==####....#",
     "####################",
 ]
 
