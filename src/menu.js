@@ -39,9 +39,25 @@ class MenuScene extends Phaser.Scene {
     btnNivel1.on("pointerdown", () => this.iniciarNivel("Level1"));
     btnNivel2.on("pointerdown", () => this.iniciarNivel("Level2"));
     btnNivel3.on("pointerdown", () => this.iniciarNivel("Level3"));
+
+    this.add
+      .text(
+        cx,
+        cy + 200,
+        "CONTROLES\n" +
+          "ROJO:  W A S D  ·  ESPACIO disparar  ·  E muro\n" +
+          "AZUL:  ↑ ← ↓ →  ·  M disparar  ·  N dash\n" +
+          "ESC: volver al menú",
+        { fontSize: "20px", fill: "#aaaaaa", align: "center", lineSpacing: 8 },
+      )
+      .setOrigin(0.5);
   }
 
   iniciarNivel(nivelKey) {
+    this.registry.set("scoreRojo", 0);
+    this.registry.set("scoreAzul", 0);
+    this.registry.set("ganador", null);
+
     this.scene.start(nivelKey);
     this.scene.launch("UIScene");
   }

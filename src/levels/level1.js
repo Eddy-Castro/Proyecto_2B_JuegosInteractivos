@@ -130,6 +130,15 @@ class Level1 extends Phaser.Scene {
       })
       .setScrollFactor(0)
       .setDepth(100);
+
+    // --- BARRAS DE COOLDOWN ---
+    this.barraRojo = new BarraCooldown(this, 30, 110, 0xff3333);
+    this.barraAzul = new BarraCooldown(
+      this,
+      this.cameras.main.width - 150,
+      110,
+      0x3366ff,
+    );
   }
 
   update() {
@@ -139,6 +148,13 @@ class Level1 extends Phaser.Scene {
     if (this.jugador1 && this.jugador1.active) {
       this.jugador1.actualizar();
     }
+
+    const progreso = (tanque, duracionMs) => {
+      const restante = tanque.tiempoHabilidad - this.time.now;
+      return restante <= 0 ? 1 : 1 - restante / duracionMs;
+    };
+    if (this.jugador?.active) this.barraRojo.actualizar(progreso(this.jugador, 10000));
+    if (this.jugador1?.active) this.barraAzul.actualizar(progreso(this.jugador1, 3000));
   }
 
   configurarColisiones() {
@@ -280,6 +296,26 @@ class Level1 extends Phaser.Scene {
       this.isResetting = true;
       this.cameras.main.stopFollow();
 
+      // Pequeño margen para que un posible doble impacto en el mismo frame
+      // (empate) termine de marcar ambas banderas antes de anunciar al ganador.
+      this.time.delayedCall(100, () => {
+        let mensaje = "¡EMPATE!";
+        if (this.rojoMuerto && !this.azulMuerto) mensaje = "¡RONDA PARA AZUL!";
+        else if (this.azulMuerto && !this.rojoMuerto) mensaje = "¡RONDA PARA ROJO!";
+
+        this.add
+          .text(this.cameras.main.width / 2, this.cameras.main.height / 2, mensaje, {
+            fontSize: "48px",
+            fill: "#ffffff",
+            fontStyle: "bold",
+            stroke: "#000000",
+            strokeThickness: 8,
+          })
+          .setOrigin(0.5)
+          .setScrollFactor(0)
+          .setDepth(200);
+      });
+
       this.time.delayedCall(3000, () => {
         this.evaluarRonda();
       });
@@ -295,10 +331,20 @@ class Level1 extends Phaser.Scene {
       console.log("¡Empate! Ambos fueron destruidos.");
     } else if (this.rojoMuerto) {
       // Azul gana la ronda
-      this.registry.set("scoreAzul", scoreAzul + 1);
+      scoreAzul += 1;
+      this.registry.set("scoreAzul", scoreAzul);
     } else if (this.azulMuerto) {
       // Rojo gana la ronda
-      this.registry.set("scoreRojo", scoreRojo + 1);
+      scoreRojo += 1;
+      this.registry.set("scoreRojo", scoreRojo);
+    }
+
+    const META = 5;
+    if (scoreRojo >= META || scoreAzul >= META) {
+      this.registry.set("ganador", scoreRojo >= META ? "ROJO" : "AZUL");
+      this.scene.stop("UIScene");
+      this.scene.start("GameOverScene");
+      return;
     }
 
     // Reinicia la escena: limpia las balas, recarga las cajas y lanza a
