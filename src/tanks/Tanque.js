@@ -11,8 +11,18 @@ class TanqueBase extends Phaser.Physics.Arcade.Sprite {
     this.velocidadRotacion = 0;
     this.aceleracion = 0;
 
-    this.bala = new Bala(scene, 0, 0, "bala");
-    this.bala.desactivar();
+    this.balas = scene.physics.add.group({
+      classType: Bala,
+      maxSize: 3,
+      runChildUpdate: false,
+    });
+    for (let i = 0; i < 3; i++) {
+      const b = new Bala(scene, 0, 0, "bala");
+      this.balas.add(b, true);
+      b.desactivar();
+    }
+    this.tiempoUltimoDisparo = 0;
+    this.cadenciaMs = 400;
   }
 
   actualizar() {
@@ -44,15 +54,43 @@ class TanqueBase extends Phaser.Physics.Arcade.Sprite {
   }
 
   intentarDisparo() {
-    if (!this.bala.active) {
-      // Desplazamos el punto de aparición hacia adelante
-      const distancia = 35; // Aumenta este número si tu tanque es más grande
-      const balaX = this.x + Math.cos(this.rotation) * distancia;
-      const balaY = this.y + Math.sin(this.rotation) * distancia;
+    const ahora = this.scene.time.now;
+    if (ahora < this.tiempoUltimoDisparo + this.cadenciaMs) return;
 
-      // Disparamos desde la nueva coordenada segura
-      this.bala.disparar(balaX, balaY, this.rotation);
-    }
+    const bala = this.balas.getChildren().find((b) => !b.active);
+    if (!bala) return; // las 3 balas están en vuelo
+
+    this.tiempoUltimoDisparo = ahora;
+
+    const distancia = 35;
+    const balaX = this.x + Math.cos(this.rotation) * distancia;
+    const balaY = this.y + Math.sin(this.rotation) * distancia;
+    bala.disparar(balaX, balaY, this.rotation);
+
+    // RETROCESO: empuja el tanque hacia atrás
+    const retroceso = 120;
+    this.scene.physics.velocityFromRotation(
+      this.rotation + Math.PI,
+      retroceso,
+      this.body.velocity,
+    );
+
+    // SCREEN SHAKE corto
+    this.scene.cameras.main.shake(80, 0.004);
+
+    // FOGONAZO: destello que se desvanece
+    const flash = this.scene.add
+      .circle(balaX, balaY, 14, 0xffdd55, 0.9)
+      .setDepth(50);
+    this.scene.tweens.add({
+      targets: flash,
+      scale: 0,
+      alpha: 0,
+      duration: 120,
+      onComplete: () => flash.destroy(),
+    });
+
+    if (this.scene.audio) this.scene.audio.reproducir("disparo");
   }
 }
 
@@ -65,6 +103,7 @@ class TanqueRojo extends TanqueBase {
     this.setDrag(800);
     this.velocidadRotacion = 150;
     this.aceleracion = 300;
+    this.velocidadMaximaBase = 100;
 
     this.teclas = scene.input.keyboard.addKeys({
       arriba: Phaser.Input.Keyboard.KeyCodes.W,
@@ -126,6 +165,7 @@ class TanqueAzul extends TanqueBase {
     this.setDrag(200);
     this.velocidadRotacion = 300;
     this.aceleracion = 150;
+    this.velocidadMaximaBase = 250;
 
     this.teclas = scene.input.keyboard.addKeys({
       arriba: Phaser.Input.Keyboard.KeyCodes.UP,
@@ -166,6 +206,7 @@ class TanqueVerde extends TanqueBase {
     this.setDrag(50);
     this.velocidadRotacion = 250;
     this.aceleracion = 400;
+    this.velocidadMaximaBase = 350;
 
     this.tiempoHabilidad = 0;
 

@@ -21,13 +21,21 @@ class Bala extends Phaser.Physics.Arcade.Sprite {
 
     this.scene.physics.velocityFromRotation(angulo, 300, this.body.velocity);
 
+    this.rebotes = 0;
+    this.maxRebotes = 4;
+
     if (this.tiempoVida) {
       this.tiempoVida.remove();
     }
 
-    this.tiempoVida = this.scene.time.delayedCall(15000, () => {
+    this.tiempoVida = this.scene.time.delayedCall(6000, () => {
       this.desactivar();
     });
+  }
+
+  registrarRebote() {
+    this.rebotes++;
+    if (this.rebotes > this.maxRebotes) this.desactivar();
   }
 
   desactivar() {

@@ -140,22 +140,30 @@ class Level1 extends Phaser.Scene {
     // 1. COLISIONES TANQUE ROJO (Físicas Normales)
     if (this.capaParedes) {
       this.physics.add.collider(this.jugador, this.capaParedes);
-      this.physics.add.collider(this.jugador.bala, this.capaParedes);
+      this.physics.add.collider(this.jugador.balas, this.capaParedes, (a, b) => {
+        const bala = a.registrarRebote ? a : b;
+        bala.registrarRebote();
+        if (this.audio) this.audio.reproducir("rebote");
+      });
     }
     this.physics.add.collider(this.jugador, this.cajas);
     this.physics.add.collider(
-      this.jugador.bala,
+      this.jugador.balas,
       this.cajas,
       this.golpearCaja,
       null,
       this,
     );
     this.physics.add.collider(this.jugador, this.muros);
-    this.physics.add.collider(this.jugador.bala, this.muros);
+    this.physics.add.collider(this.jugador.balas, this.muros);
 
     // 2. COLISIONES TANQUE AZUL (Con filtro de Dash Fantasma)
     if (this.capaParedes) {
-      this.physics.add.collider(this.jugador1.bala, this.capaParedes); // Su bala choca normal
+      this.physics.add.collider(this.jugador1.balas, this.capaParedes, (a, b) => {
+        const bala = a.registrarRebote ? a : b;
+        bala.registrarRebote();
+        if (this.audio) this.audio.reproducir("rebote");
+      }); // Su bala choca normal
       this.physics.add.collider(
         this.jugador1,
         this.capaParedes,
@@ -181,7 +189,7 @@ class Level1 extends Phaser.Scene {
       this,
     );
     this.physics.add.collider(
-      this.jugador1.bala,
+      this.jugador1.balas,
       this.cajas,
       this.golpearCaja,
       null,
@@ -194,18 +202,18 @@ class Level1 extends Phaser.Scene {
       () => !this.jugador1.esInvulnerable,
       this,
     );
-    this.physics.add.collider(this.jugador1.bala, this.muros);
+    this.physics.add.collider(this.jugador1.balas, this.muros);
 
     // Fuego Cruzado
     this.physics.add.collider(
-      this.jugador.bala,
+      this.jugador.balas,
       this.jugador1,
       this.impactoJugador,
       null,
       this,
     );
     this.physics.add.collider(
-      this.jugador1.bala,
+      this.jugador1.balas,
       this.jugador,
       this.impactoJugador,
       null,
@@ -214,14 +222,14 @@ class Level1 extends Phaser.Scene {
 
     // Fuego Amigo / Suicidio (Opcional, pero recomendado si rebotan las balas)
     this.physics.add.collider(
-      this.jugador.bala,
+      this.jugador.balas,
       this.jugador,
       this.impactoJugador,
       null,
       this,
     );
     this.physics.add.collider(
-      this.jugador1.bala,
+      this.jugador1.balas,
       this.jugador1,
       this.impactoJugador,
       null,
@@ -229,13 +237,20 @@ class Level1 extends Phaser.Scene {
     );
   }
 
-  golpearCaja(bala, caja) {
+  golpearCaja(a, b) {
+    // Al colisionar un Group (balas) con otro objeto, Phaser no siempre
+    // respeta el orden de argumentos pasado a physics.add.collider();
+    // se identifica la bala por duck-typing en vez de por posición.
+    const bala = a.disparar ? a : b;
+    const caja = a.disparar ? b : a;
     // Ya no da puntos ni termina el juego, solo funciona como cobertura destructible
     caja.destroy();
     bala.desactivar();
   }
 
-  impactoJugador(bala, victima) {
+  impactoJugador(a, b) {
+    const bala = a.disparar ? a : b;
+    const victima = a.disparar ? b : a;
     // Si la víctima esquivó con Dash, ignorar impacto
     if (victima.esInvulnerable) {
       bala.desactivar();
@@ -243,6 +258,8 @@ class Level1 extends Phaser.Scene {
     }
 
     // Efectos de destrucción
+    this.cameras.main.shake(250, 0.012);
+    this.cameras.main.flash(120, 255, 80, 80);
     victima.disableBody(true, true);
     bala.desactivar();
 

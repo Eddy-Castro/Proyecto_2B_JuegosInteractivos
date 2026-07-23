@@ -53,7 +53,7 @@ class Level3 extends Phaser.Scene {
 
     if (capaParedes) {
       this.physics.add.collider(this.jugador, capaParedes);
-      this.physics.add.collider(this.jugador.bala, capaParedes);
+      this.physics.add.collider(this.jugador.balas, capaParedes);
     }
 
     this.physics.add.overlap(

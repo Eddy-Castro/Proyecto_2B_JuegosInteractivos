@@ -56,7 +56,7 @@ class Level2 extends Phaser.Scene {
 
     if (capaParedes) {
       this.physics.add.collider(this.jugador, capaParedes);
-      this.physics.add.collider(this.jugador.bala, capaParedes);
+      this.physics.add.collider(this.jugador.balas, capaParedes);
     }
 
     this.physics.add.overlap(
@@ -67,7 +67,7 @@ class Level2 extends Phaser.Scene {
       this,
     );
     this.physics.add.collider(
-      this.jugador.bala,
+      this.jugador.balas,
       this.jugador,
       this.recibirDano,
       null,
@@ -83,7 +83,9 @@ class Level2 extends Phaser.Scene {
     portal.teletransportar(jugador);
   }
 
-  recibirDano(bala, jugador) {
+  recibirDano(a, b) {
+    const bala = a.disparar ? a : b;
+    const jugador = a.disparar ? b : a;
     if (!jugador.esInvulnerable) {
       bala.desactivar();
       this.scene.stop("UIScene");
