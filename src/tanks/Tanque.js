@@ -199,7 +199,9 @@ class TanqueAzul extends TanqueBase {
 }
 
 class TanqueVerde extends TanqueBase {
-  constructor(scene, x, y, texture) {
+  // esquema: "wasd" (jugador 1) o "flechas" (jugador 2, para el duelo a 2
+  // jugadores del Nivel 3 — G2). Mismo tanque, distinto set de teclas.
+  constructor(scene, x, y, texture, esquema = "wasd") {
     super(scene, x, y, texture);
 
     this.setMaxVelocity(350);
@@ -208,19 +210,28 @@ class TanqueVerde extends TanqueBase {
     this.velocidadRotacion = 250;
     this.aceleracion = 400;
 
-    this.teclas = scene.input.keyboard.addKeys({
-      arriba: Phaser.Input.Keyboard.KeyCodes.W,
-      abajo: Phaser.Input.Keyboard.KeyCodes.S,
-      izquierda: Phaser.Input.Keyboard.KeyCodes.A,
-      derecha: Phaser.Input.Keyboard.KeyCodes.D,
-      disparo: Phaser.Input.Keyboard.KeyCodes.SPACE,
-    });
-
     this.tiempoHabilidad = 0;
     this.cooldownMina = 8000;
 
-    scene.input.keyboard.on("keydown-E", this.colocarMina, this);
-    scene.input.keyboard.on("keydown-SPACE", this.intentarDisparo, this);
+    if (esquema === "flechas") {
+      this.teclas = scene.input.keyboard.addKeys({
+        arriba: Phaser.Input.Keyboard.KeyCodes.UP,
+        abajo: Phaser.Input.Keyboard.KeyCodes.DOWN,
+        izquierda: Phaser.Input.Keyboard.KeyCodes.LEFT,
+        derecha: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+      });
+      scene.input.keyboard.on("keydown-N", this.colocarMina, this);
+      scene.input.keyboard.on("keydown-M", this.intentarDisparo, this);
+    } else {
+      this.teclas = scene.input.keyboard.addKeys({
+        arriba: Phaser.Input.Keyboard.KeyCodes.W,
+        abajo: Phaser.Input.Keyboard.KeyCodes.S,
+        izquierda: Phaser.Input.Keyboard.KeyCodes.A,
+        derecha: Phaser.Input.Keyboard.KeyCodes.D,
+      });
+      scene.input.keyboard.on("keydown-E", this.colocarMina, this);
+      scene.input.keyboard.on("keydown-SPACE", this.intentarDisparo, this);
+    }
   }
 
   colocarMina() {
