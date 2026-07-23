@@ -203,12 +203,10 @@ class TanqueVerde extends TanqueBase {
     super(scene, x, y, texture);
 
     this.setMaxVelocity(350);
+    this.velocidadMaximaBase = 350;
     this.setDrag(50);
     this.velocidadRotacion = 250;
     this.aceleracion = 400;
-    this.velocidadMaximaBase = 350;
-
-    this.tiempoHabilidad = 0;
 
     this.teclas = scene.input.keyboard.addKeys({
       arriba: Phaser.Input.Keyboard.KeyCodes.W,
@@ -218,15 +216,20 @@ class TanqueVerde extends TanqueBase {
       disparo: Phaser.Input.Keyboard.KeyCodes.SPACE,
     });
 
-    scene.input.keyboard.on("keydown-SPACE", this.intentarDisparo, this);
+    this.tiempoHabilidad = 0;
+    this.cooldownMina = 8000;
+
     scene.input.keyboard.on("keydown-E", this.colocarMina, this);
+    scene.input.keyboard.on("keydown-SPACE", this.intentarDisparo, this);
   }
 
   colocarMina() {
-    if (this.scene.time.now > this.tiempoHabilidad) {
-      const mina = new MinaOxido(this.scene, this.x, this.y);
-      this.scene.minas.add(mina);
-      this.tiempoHabilidad = this.scene.time.now + 8000;
-    }
+    if (this.scene.time.now < this.tiempoHabilidad) return;
+    if (!this.active || !this.body) return;
+
+    const mina = new MinaOxido(this.scene, this.x, this.y, this);
+    this.scene.minas.add(mina);
+    this.scene.audio?.reproducir("habilidad");
+    this.tiempoHabilidad = this.scene.time.now + this.cooldownMina;
   }
 }

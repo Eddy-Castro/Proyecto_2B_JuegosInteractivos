@@ -44,7 +44,7 @@ class Level3 extends Phaser.Scene {
       }
     }
 
-    this.minas = this.physics.add.group();
+    this.minas = this.physics.add.staticGroup();
     this.jugador = new TanqueVerde(this, 100, 100, "tanque_verde");
 
     this.physics.world.setBounds(0, 0, 800, 600);
@@ -75,16 +75,35 @@ class Level3 extends Phaser.Scene {
   }
 
   gestionarBarro() {
-    if (this.capaBarro) {
-      const tile = this.capaBarro.getTileAtWorldXY(
-        this.jugador.x,
-        this.jugador.y,
-      );
-      if (tile && tile.index !== -1) {
-        this.jugador.setDrag(800);
-      } else {
-        this.jugador.setDrag(50);
+    if (!this.capaBarro) return;
+
+    [this.jugador, this.jugador1].forEach((t) => {
+      if (!t || !t.active || !t.body) return;
+      const tile = this.capaBarro.getTileAtWorldXY(t.x, t.y);
+      const enBarro = tile && tile.index !== -1;
+
+      if (enBarro && !t.estabaEnBarro) {
+        t.setDrag(800);
+        t.setMaxVelocity((t.velocidadMaximaBase || 350) * 0.45);
+        t.setTint(0x8a6a44); // el tanque se ve embarrado
+        t.estabaEnBarro = true;
+      } else if (!enBarro && t.estabaEnBarro) {
+        t.setDrag(50);
+        t.setMaxVelocity(t.velocidadMaximaBase || 350);
+        t.clearTint();
+        t.estabaEnBarro = false;
       }
-    }
+
+      // Salpicaduras mientras avanza por el barro
+      if (enBarro && t.body.velocity.length() > 40 && this.time.now > (t.proximaSalpicadura || 0)) {
+        t.proximaSalpicadura = this.time.now + 120;
+        const gota = this.add.circle(
+          t.x + Phaser.Math.Between(-18, 18),
+          t.y + Phaser.Math.Between(-18, 18),
+          Phaser.Math.Between(3, 6), 0x6b4f2a, 0.7
+        ).setDepth(2);
+        this.tweens.add({ targets: gota, alpha: 0, duration: 800, onComplete: () => gota.destroy() });
+      }
+    });
   }
 }
