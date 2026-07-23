@@ -56,6 +56,11 @@ class Level3 extends Phaser.Scene {
       this.physics.add.collider(this.jugador.balas, capaParedes);
     }
 
+    // Colisión tanque↔tanque: preparada para cuando G2 añada el 2º jugador
+    if (this.jugador1) {
+      this.physics.add.collider(this.jugador, this.jugador1);
+    }
+
     this.physics.add.overlap(
       this.jugador,
       this.minas,

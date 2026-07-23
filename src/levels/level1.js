@@ -51,7 +51,7 @@ class Level1 extends Phaser.Scene {
     this.cajas.create(500, 200, "caja_destructible");
 
     // --- JUGADOR 1 (ROJO) ---
-    const puntoSpawnRojo = this.obtenerPuntoSpawnValido(mapa, this.capaParedes);
+    const puntoSpawnRojo = obtenerPuntoSpawnValido(mapa, this.capaParedes);
     this.jugador = new TanqueRojo(
       this,
       puntoSpawnRojo.x,
@@ -59,8 +59,13 @@ class Level1 extends Phaser.Scene {
       "tanque_rojo",
     );
 
-    // --- JUGADOR 2 (AZUL) ---
-    const puntoSpawnAzul = this.obtenerPuntoSpawnValido(mapa, this.capaParedes);
+    // --- JUGADOR 2 (AZUL), a ≥400px del jugador 1 ---
+    const puntoSpawnAzul = obtenerPuntoSpawnValidoLejos(
+      mapa,
+      this.capaParedes,
+      puntoSpawnRojo,
+      400,
+    );
     this.jugador1 = new TanqueAzul(
       this,
       puntoSpawnAzul.x,
@@ -204,6 +209,9 @@ class Level1 extends Phaser.Scene {
     );
     this.physics.add.collider(this.jugador1.balas, this.muros);
 
+    // Colisión tanque↔tanque: ya no se atraviesan
+    this.physics.add.collider(this.jugador, this.jugador1);
+
     // Fuego Cruzado
     this.physics.add.collider(
       this.jugador.balas,
@@ -296,21 +304,5 @@ class Level1 extends Phaser.Scene {
     // Reinicia la escena: limpia las balas, recarga las cajas y lanza a
     // los tanques en nuevos puntos aleatorios automáticamente.
     this.scene.restart();
-  }
-
-  obtenerPuntoSpawnValido(mapa, capaParedes) {
-    const puntosValidos = [];
-    for (let y = 0; y < mapa.height; y++) {
-      for (let x = 0; x < mapa.width; x++) {
-        const tile = capaParedes.getTileAt(x, y);
-        if (!tile || tile.index === -1) {
-          puntosValidos.push({
-            x: x * mapa.tileWidth + mapa.tileWidth / 2,
-            y: y * mapa.tileHeight + mapa.tileHeight / 2,
-          });
-        }
-      }
-    }
-    return Phaser.Utils.Array.GetRandom(puntosValidos);
   }
 }

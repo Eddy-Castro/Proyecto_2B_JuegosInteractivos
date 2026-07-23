@@ -4,21 +4,26 @@ class Teletransportador extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, destinoX, destinoY) {
     super(scene, x, y, "portal");
     scene.add.existing(this);
-    scene.physics.add.existing(this);
+    scene.physics.add.existing(this, true);
 
     this.destinoX = destinoX;
     this.destinoY = destinoY;
-    this.enCooldown = false;
+    this.cooldownPorJugador = new Map(); // jugador -> timestamp
   }
 
   teletransportar(jugador) {
-    if (!this.enCooldown) {
-      jugador.setPosition(this.destinoX, this.destinoY);
-      this.enCooldown = true;
+    const ahora = this.scene.time.now;
+    const listo = this.cooldownPorJugador.get(jugador) || 0;
+    if (ahora < listo) return;
 
-      this.scene.time.delayedCall(1000, () => {
-        this.enCooldown = false;
-      });
-    }
+    // Bloquea AMBOS extremos para este jugador (evita el rebote infinito)
+    const BLOQUEO = 1200;
+    this.scene.portales.getChildren().forEach((p) => {
+      p.cooldownPorJugador.set(jugador, ahora + BLOQUEO);
+    });
+
+    jugador.setPosition(this.destinoX, this.destinoY);
+    this.scene.audio?.reproducir("portal");
+    if (this.scene.efectoTeletransporte) this.scene.efectoTeletransporte(jugador);
   }
 }
