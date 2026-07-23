@@ -1442,7 +1442,12 @@ this.portales.getChildren().forEach((p) => {
 
 **Problema observado:** el Nivel 2 tiene un solo tanque, sin oponente, y el jugador muere con su propia bala. No es un nivel, es una demo rota.
 
-**Archivos:** `src/levels/level2.js`, `src/entities/Teletransportador.js`
+**Archivos:** `src/levels/level2.js`, `src/entities/Teletransportador.js`, `src/utils/spawn.js` (nuevo), `src/levels/level1.js`, `index.html`
+
+> 📝 **Notas de ejecución (verificadas tras implementar):**
+> - **La utilidad de spawn se extrajo como funciones sueltas, no métodos.** El código de abajo las muestra como `this.obtenerPuntoSpawnValido(...)`, pero en la práctica se sacaron a `src/utils/spawn.js` como funciones globales (`obtenerPuntoSpawnValido(mapa, capa)`, sin `this.`) y se añadió `<script src="src/utils/spawn.js">` **como primer script** de `index.html`. Level1, Level2 y Level3 las comparten. Si dejas ese `<script>` fuera, los tres niveles crashean con `obtenerPuntoSpawnValido is not defined`.
+> - **Bug de límites del mundo corregido de paso (hallazgo C2 del playtesting).** El `level2.js` de la Fase 0 fijaba `physics.world.setBounds(0,0,800,600)` sobre un mapa de 1280×960, dejando el 61 % inaccesible. Se cambió a `mapa.widthInPixels/heightInPixels`, como el Nivel 1. Lo mismo aplica al Nivel 3 (lo corrige G2).
+> - **La colisión tanque↔tanque del Nivel 3 queda escrita pero inactiva hasta G2.** D2 solo puede activarla en Nivel 1 y 2, porque el 2.º jugador del Nivel 3 lo añade **G2**. No intentes "cerrar" ese punto en D2: déjalo condicionado (`if (this.jugador1) ...`) y que G2 lo complete.
 
 **Implementación:**
 
@@ -1821,9 +1826,14 @@ gestionarBarro() {
 
 ### G2 — Level Design: diseño real del Nivel 3
 
-**Problema observado:** el mapa del Nivel 3 nunca existió (`ruta/mapa3.json`). La capa `Barro` que el código lee no estaba en ningún archivo.
+**Problema observado:** el Nivel 3 solo instanciaba un jugador y no tenía duelo. El mapa (`mapa3.json`) y su capa `Barro` ya existían desde la Fase 0 (F0.6) y pasaban `validar_mapa.py`, así que el trabajo de G2 fue **hacerlo jugable a dos** y darle intención de diseño, no crear el mapa desde cero.
 
-**Archivos:** `resources/maps/mapa3.json`, `tools/generar_mapa.py`, `src/levels/level3.js`
+**Archivos:** `resources/maps/mapa3.json`, `tools/generar_mapa.py`, `src/levels/level3.js`, **`src/tanks/Tanque.js`**
+
+> 📝 **Decisiones de ejecución (verificadas tras implementar):**
+> - **`Tanque.js` es imprescindible en G2**, aunque no estuviera en la lista original. `TanqueVerde` tenía un único esquema de teclas; para que dos instancias convivan hubo que añadirle un 4.º parámetro `esquema` (`"wasd"` / `"flechas"`). Sin eso, los dos jugadores comparten teclado.
+> - **El duelo del Nivel 3 es entre dos `TanqueVerde`** (misma facción, distinto set de teclas: WASD+E+ESPACIO vs Flechas+N+M), **no** Rojo vs Azul. Motivo: si se reusaran Rojo/Azul, la mina (habilidad exclusiva del verde, G1) quedaría sin uso en partida. **No lo cambies sin querer**: es una decisión de diseño deliberada.
+> - **Identificación visual con anillos, no con tinte.** Ver el gotcha del tinte más abajo.
 
 **Concepto: "Hijos del Páramo"** — campo abierto con pocas paredes pero grandes zonas de barro que funcionan como "paredes blandas": no bloquean, penalizan. El jugador debe decidir entre la ruta corta (barro, lento y vulnerable) o la larga (rápida pero expuesta).
 
@@ -1859,11 +1869,33 @@ Debe dar entre 15 % y 25 %.
 
 🛑 **Al reescribir `level3.js`, conserva `this.minas = this.physics.add.staticGroup()`.** No lo cambies a `physics.add.group()`: la mina de G1 usa cuerpo estático y un grupo dinámico crashea al colocar la primera mina (ver el recuadro de G1). Es el error más fácil de reintroducir en esta reescritura.
 
+🎨 **Gotcha del tinte: `setTint()`/`clearTint()` no se pueden usar para identificar al jugador.** El barro (`setTint(0x8a6a44)` al entrar/`clearTint()` al salir) y las minas (`setTint(0x996644)` mientras ralentizan) ya usan el tinte del tanque para señalizar su propio estado. Si además tiñes el sprite para distinguir facción/jugador, ambos usos se pisan. Por eso el Nivel 3 identifica a cada jugador con **un anillo de color que sigue al tanque** (`this.add.circle(...).setStrokeStyle(...)`), no tiñéndolo. Si en el futuro alguien quiere teñir un tanque para otra cosa (daño, power-up), chocará con esto.
+
+⚠️ **Verificado en auditoría: `MAPA3` genera 4 callejones sin salida** (`validar_mapa.py` los marca con ⚠, no ✗ — no bloquea, no es criterio de aceptación). No rompen nada, pero en una próxima pasada de nivel-design conviene suavizarlos.
+
 ✅ **Criterios de aceptación**
 - El barro se distingue visualmente del suelo normal.
 - El porcentaje de barro está entre 15 % y 25 % (verificado con el comando de arriba).
 - Existe al menos una ruta sin barro entre las dos zonas de spawn.
 - El mapa es visiblemente distinto a los niveles 1 y 2.
+- **Dos jugadores controlables** (dos `TanqueVerde`, WASD+E+ESPACIO vs Flechas+N+M).
+
+> 🐞 **BUG CONOCIDO detectado en auditoría (G1↔G2, sin corregir aún): el barro cancela la ralentización de la mina.** `gestionarBarro()` y `MinaOxido.detonar()` **ambos escriben `maxVelocity` de forma incondicional**, así que se pisan. Reproducido en el juego real:
+> - Un tanque ralentizado por mina (maxVel 70) que **sale del barro** → `gestionarBarro` lo resetea a 350: la mina queda cancelada por completo.
+> - Un tanque ralentizado por mina que **entra al barro** → maxVel pasa a 158 (barro), perdiendo el efecto de la mina.
+>
+> No es un crash y el caso común (mina en suelo seco, víctima que no toca barro) funciona; pero con el 16,8 % del mapa embarrado, la interacción ocurrirá. **Arreglo recomendado:** que ambos sistemas compongan en vez de sobrescribir. Dar a cada tanque dos factores y recalcular:
+> ```js
+> // helper en la escena o el tanque
+> function recalcularVelocidad(t) {
+>   const fb = t.enBarro ? 0.45 : 1;
+>   const fm = t.ralentizadoMina ? 0.2 : 1;
+>   t.setMaxVelocity(t.velocidadMaximaBase * fb * fm);
+> }
+> // gestionarBarro(): set t.enBarro = enBarro; recalcularVelocidad(t);   (en vez de setMaxVelocity directo)
+> // MinaOxido.detonar(): jugador.ralentizadoMina = true; recalcularVelocidad(jugador);
+> //   y tras 3 s: jugador.ralentizadoMina = false; recalcularVelocidad(jugador);
+> ```
 
 ---
 
