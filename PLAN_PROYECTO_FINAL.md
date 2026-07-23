@@ -1051,7 +1051,9 @@ Media hora de trabajo, tú solo:
 
 **Problema observado:** disparar no se siente potente; solo se puede tener 1 bala en pantalla y dura 15 s rebotando, lo que traba el ritmo del duelo.
 
-**Archivos:** `src/tanks/Bala.js`, `src/tanks/Tanque.js`, `src/levels/level1.js`
+**Archivos:** `src/tanks/Bala.js`, `src/tanks/Tanque.js`, `src/levels/level1.js`, `src/levels/level2.js`, `src/levels/level3.js`
+
+> ⚠️ **`level2.js` y `level3.js` también hay que tocarlos.** El cambio de `this.bala` (sprite único) a `this.balas` (grupo) rompe todos los colliders que referencian `.bala`, y esos dos niveles también los tienen. No basta con `level1.js`.
 
 **Implementación:**
 
@@ -1072,6 +1074,15 @@ for (let i = 0; i < 3; i++) {
 this.tiempoUltimoDisparo = 0;
 this.cadenciaMs = 400; // cooldown entre disparos
 ```
+
+**1b. Velocidad base para las mejoras G1 y G2.** En **cada subclase** de tanque (`TanqueRojo`, `TanqueAzul`, `TanqueVerde`), justo después de su `setMaxVelocity(N)`, guarda ese valor en una propiedad:
+
+```js
+this.setMaxVelocity(100);      // el N de cada tanque: 100 / 250 / 350
+this.velocidadMaximaBase = 100; // misma N — la leen las minas (G1) y el barro (G2/G3)
+```
+
+> Por qué aquí: G1 (minas) y G2/G3 (barro) restauran la velocidad tras penalizarla. Sin esta propiedad recurren a un `350` hardcodeado que es incorrecto para el rojo (100) y el azul (250). E1 es quien la introduce porque es la primera mejora que toca `Tanque.js`.
 
 **2. `intentarDisparo()` con cadencia y retroceso:**
 
@@ -1138,10 +1149,11 @@ this.cameras.main.shake(250, 0.012);
 this.cameras.main.flash(120, 255, 80, 80);
 ```
 
-⚠️ **Ojo:** al cambiar `this.bala` por `this.balas`, **hay que actualizar todos los colliders** de `configurarColisiones()` en `level1.js` (son 8 referencias a `.bala`). Búscalas con:
+⚠️ **Ojo:** al cambiar `this.bala` por `this.balas`, **hay que actualizar todos los colliders** que referencian `.bala` — no solo en `level1.js` (`configurarColisiones()`, ~8 referencias), también en `level2.js` y `level3.js`. Búscalas TODAS con:
 ```bash
-grep -n "\.bala" src/levels/*.js src/tanks/*.js
+grep -rn "\.bala" src/levels/ src/tanks/
 ```
+Un `.bala` sin migrar a `.balas` deja un collider apuntando a `undefined`, que Phaser tolera en silencio: no verás un error, pero esa colisión simplemente no ocurrirá.
 
 ✅ **Criterios de aceptación**
 - Se pueden tener 3 balas simultáneas por tanque.
@@ -1663,6 +1675,10 @@ class MinaOxido extends Phaser.Physics.Arcade.Sprite {
 
     // Autodestrucción a los 20 s para no llenar el mapa
     scene.time.delayedCall(20000, () => { if (this.active) this.destroy(); });
+
+    // El cuerpo estático NO sigue al setScale/tween anteriores: refresca su
+    // hitbox para que coincida con el tamaño visual (opcional pero recomendado).
+    this.refreshBody();
   }
 
   detonar(jugador) {
@@ -1701,6 +1717,19 @@ class MinaOxido extends Phaser.Physics.Arcade.Sprite {
 // En cada subclase, junto a setMaxVelocity(N):
 this.velocidadMaximaBase = N;
 ```
+
+🛑 **CRÍTICO — el grupo de minas DEBE ser estático.** `MinaOxido` crea un cuerpo **estático** (`scene.physics.add.existing(this, true)`), así que en `level3.js` el grupo tiene que ser:
+```js
+this.minas = this.physics.add.staticGroup();   // ✅ NO uses this.physics.add.group()
+```
+Añadir un sprite con cuerpo estático a un grupo **dinámico** (`physics.add.group()`) **crashea al colocar la primera mina**. Verificado en Phaser 3.60.0:
+
+| Cuerpo de la mina | Grupo `this.minas` | Resultado |
+|---|---|---|
+| estático (`existing(this, true)`) | `staticGroup()` | ✅ funciona |
+| estático (`existing(this, true)`) | `group()` | ❌ `TypeError: e[i] is not a function` al hacer `minas.add(mina)` |
+
+El `level3.js` de la Fase 0 ya trae `staticGroup()`, así que si no lo tocas, funciona. El riesgo real está en **G2**, que reescribe `level3.js`: allí es fácil volver a poner `physics.add.group()` por costumbre y reintroducir el crash. (Alternativa válida si algún día quieres un grupo dinámico: cambia la mina a cuerpo dinámico `existing(this)` + `setImmovable(true)`; pero el diseño estático es el correcto para una mina que no se mueve.)
 
 **2. `TanqueVerde` completo.** Debe quedar así:
 
@@ -1826,7 +1855,9 @@ print(f'Tiles libres: {libres}  ·  Barro: {barro}  ·  {barro/libres*100:.1f}%'
 ```
 Debe dar entre 15 % y 25 %.
 
-⚠️ **El Nivel 3 también necesita 2 jugadores** (hoy solo instancia uno). Copia el patrón de D2: dos tanques, spawns lejanos, sistema de rondas y colisión tanque↔tanque. Coordina con David para no duplicar el código de `obtenerPuntoSpawnValidoLejos` — **extráiganlo a un archivo compartido** `src/utils/spawn.js` y que los 3 niveles lo usen.
+⚠️ **El Nivel 3 también necesita 2 jugadores** (hoy solo instancia uno). Copia el patrón de D2: dos tanques, spawns lejanos, sistema de rondas y colisión tanque↔tanque. Reutiliza `obtenerPuntoSpawnValidoLejos` desde `src/utils/spawn.js` (creado en D2) en vez de duplicarlo.
+
+🛑 **Al reescribir `level3.js`, conserva `this.minas = this.physics.add.staticGroup()`.** No lo cambies a `physics.add.group()`: la mina de G1 usa cuerpo estático y un grupo dinámico crashea al colocar la primera mina (ver el recuadro de G1). Es el error más fácil de reintroducir en esta reescritura.
 
 ✅ **Criterios de aceptación**
 - El barro se distingue visualmente del suelo normal.
@@ -1963,6 +1994,30 @@ Trabajando en solitario no hay conflictos de merge, pero **sí hay piezas compar
 | `src/utils/spawn.js` (`obtenerPuntoSpawnValidoLejos`) | **D2** | G2, y se retro-aplica a `level1.js` | Se escribe la misma función dos veces y divergen |
 | Colisión tanque↔tanque | **D2** | Se replica en `level1.js` y `level3.js` | Los tanques se atraviesan en los niveles donde falte |
 | Teclas de audio: `P` = SFX, `O` = música | **E3** / **G3** | — | ⚠️ `M` **ya es el disparo del tanque azul**: no la uses para audio |
+
+### 🧨 Gotcha transversal de Phaser: orden de argumentos en colisiones Grupo↔Sprite
+
+Afecta a **cualquier mejora que convierta un Sprite en un Group** (E1 pasa `bala`→`balas`; G1 agrupa minas; y le puede pasar a cualquier mejora futura que agrupe algo). No da error: falla en silencio o al revés.
+
+**La regla (verificada en Phaser 3.60.0):** en un `collider`/`overlap` entre un **Group** y un **Sprite** suelto, el callback **siempre** recibe primero el sprite suelto y después el miembro del grupo, **sin importar en qué orden los pasaste** a `.collider()`:
+
+```js
+// Ambas formas invocan el callback como (sprite, miembroDelGrupo):
+this.physics.add.collider(grupoDeBalas, tanque, cb);  // cb(tanque, bala)  ← ¡invertido!
+this.physics.add.collider(tanque, grupoDeBalas, cb);  // cb(tanque, bala)
+```
+
+Es decir: si tu handler estaba escrito como `impactoJugador(bala, victima)` pensando en dos sprites, al volver `bala` un grupo **los parámetros se te dan la vuelta** y `bala` pasa a ser el tanque.
+
+**Solución robusta (no dependas de la posición):** detecta cada objeto por lo que es, no por dónde llega. Es lo que ya hace `level2.js`:
+```js
+recibirDano(a, b) {
+  const bala = a.disparar ? a : b;      // el que sabe "disparar" es la bala
+  const jugador = a.disparar ? b : a;
+  // ...
+}
+```
+Así el handler funciona igual pases lo que pases, y sobrevive a que en el futuro alguien reordene el `collider` o agrupe el otro objeto.
 
 **Flujo de trabajo con Git + `gh`:**
 
