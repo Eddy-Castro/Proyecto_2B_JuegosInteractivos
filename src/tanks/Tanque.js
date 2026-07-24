@@ -14,10 +14,17 @@ class TanqueBase extends Phaser.Physics.Arcade.Sprite {
     this.velocidadRotacion = 0;
     this.aceleracion = 0;
 
+    // OJO: un grupo de fisica aplica sus "defaults" a cada hijo al anadirlo, y
+    // eso PISA lo que Bala fija en su constructor (setBounce/setCollideWorldBounds).
+    // Sin declararlos aqui, las balas salen con bounce 0 y resbalan por las
+    // paredes en vez de rebotar.
     this.balas = scene.physics.add.group({
       classType: Bala,
       maxSize: 3,
       runChildUpdate: false,
+      bounceX: 1,
+      bounceY: 1,
+      collideWorldBounds: true,
     });
     for (let i = 0; i < 3; i++) {
       const b = new Bala(scene, 0, 0, "bala");

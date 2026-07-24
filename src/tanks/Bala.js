@@ -22,6 +22,12 @@ class Bala extends Phaser.Physics.Arcade.Sprite {
     this.body.enable = true;
     this.body.reset(x, y);
 
+    // Reafirmar el rebote en cada disparo: si la bala se anade a un grupo de
+    // fisica, los "defaults" del grupo pisan lo fijado en el constructor y la
+    // bala resbalaria por las paredes en vez de rebotar.
+    this.setBounce(1);
+    this.setCollideWorldBounds(true);
+
     this.scene.physics.velocityFromRotation(angulo, 300, this.body.velocity);
 
     this.rebotes = 0;
