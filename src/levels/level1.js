@@ -278,6 +278,30 @@ class Level1 extends Phaser.Scene {
     );
   }
 
+  explosionMuerte(x, y) {
+    const explosion = this.add.circle(x, y, 15, 0xff8800, 1).setDepth(70);
+    this.tweens.add({
+      targets: explosion,
+      radius: 90,
+      alpha: 0,
+      duration: 450,
+      ease: "Cubic.easeOut",
+      onComplete: () => explosion.destroy(),
+    });
+    for (let i = 0; i < 12; i++) {
+      const ang = (Math.PI * 2 * i) / 12;
+      const frag = this.add.rectangle(x, y, 6, 6, 0xffaa33).setDepth(70);
+      this.tweens.add({
+        targets: frag,
+        x: x + Math.cos(ang) * Phaser.Math.Between(60, 140),
+        y: y + Math.sin(ang) * Phaser.Math.Between(60, 140),
+        alpha: 0,
+        duration: 600,
+        onComplete: () => frag.destroy(),
+      });
+    }
+  }
+
   golpearCaja(a, b) {
     // Al colisionar un Group (balas) con otro objeto, Phaser no siempre
     // respeta el orden de argumentos pasado a physics.add.collider();
@@ -302,6 +326,7 @@ class Level1 extends Phaser.Scene {
     this.cameras.main.shake(250, 0.012);
     this.cameras.main.flash(120, 255, 80, 80);
     this.audio?.reproducir("explosion");
+    this.explosionMuerte(victima.x, victima.y);
     victima.disableBody(true, true);
     bala.desactivar();
 

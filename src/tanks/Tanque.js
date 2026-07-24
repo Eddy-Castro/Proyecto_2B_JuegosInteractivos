@@ -7,6 +7,9 @@ class TanqueBase extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
 
     this.setDisplaySize(64, 50);
+    // setDisplaySize ya define scaleX/scaleY; los guardamos para poder
+    // restaurarlos tras animaciones que usan setScale (p.ej. teletransporte).
+    this.escalaBase = { x: this.scaleX, y: this.scaleY };
 
     this.velocidadRotacion = 0;
     this.aceleracion = 0;
@@ -72,6 +75,30 @@ class TanqueBase extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.setAcceleration(0);
     }
+
+    this.dejarEstela();
+  }
+
+  // Marca de rodadura que se desvanece detrás del tanque, mientras se mueve.
+  dejarEstela() {
+    if (!this.body) return;
+    const vel = this.body.velocity.length();
+    if (vel < 30) return; // solo si se mueve
+    if (this.scene.time.now < (this.proximaEstela || 0)) return;
+    if (this.scene.children.list.length > 300) return; // límite de rendimiento
+
+    this.proximaEstela = this.scene.time.now + 70;
+
+    const marca = this.scene.add
+      .rectangle(this.x, this.y, 30, 8, 0x000000, 0.28)
+      .setRotation(this.rotation)
+      .setDepth(1);
+    this.scene.tweens.add({
+      targets: marca,
+      alpha: 0,
+      duration: 1500,
+      onComplete: () => marca.destroy(),
+    });
   }
 
   intentarDisparo() {

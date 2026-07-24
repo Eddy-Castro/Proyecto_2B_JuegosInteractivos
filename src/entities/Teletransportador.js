@@ -9,6 +9,17 @@ class Teletransportador extends Phaser.Physics.Arcade.Sprite {
     this.destinoX = destinoX;
     this.destinoY = destinoY;
     this.cooldownPorJugador = new Map(); // jugador -> timestamp
+
+    this.setDepth(5);
+    scene.tweens.add({
+      targets: this,
+      scale: { from: 0.9, to: 1.15 },
+      alpha: { from: 0.75, to: 1 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
   }
 
   teletransportar(jugador) {

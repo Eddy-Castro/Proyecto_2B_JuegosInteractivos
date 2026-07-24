@@ -221,6 +221,55 @@ class Level2 extends Phaser.Scene {
     portal.teletransportar(jugador);
   }
 
+  explosionMuerte(x, y) {
+    const explosion = this.add.circle(x, y, 15, 0xff8800, 1).setDepth(70);
+    this.tweens.add({
+      targets: explosion,
+      radius: 90,
+      alpha: 0,
+      duration: 450,
+      ease: "Cubic.easeOut",
+      onComplete: () => explosion.destroy(),
+    });
+    for (let i = 0; i < 12; i++) {
+      const ang = (Math.PI * 2 * i) / 12;
+      const frag = this.add.rectangle(x, y, 6, 6, 0xffaa33).setDepth(70);
+      this.tweens.add({
+        targets: frag,
+        x: x + Math.cos(ang) * Phaser.Math.Between(60, 140),
+        y: y + Math.sin(ang) * Phaser.Math.Between(60, 140),
+        alpha: 0,
+        duration: 600,
+        onComplete: () => frag.destroy(),
+      });
+    }
+  }
+
+  efectoTeletransporte(jugador) {
+    // Onda expansiva en el origen
+    const onda = this.add.circle(jugador.x, jugador.y, 10, 0x40a0ff, 0.7).setDepth(60);
+    this.tweens.add({
+      targets: onda,
+      radius: 80,
+      alpha: 0,
+      duration: 350,
+      onComplete: () => onda.destroy(),
+    });
+
+    // El tanque se encoge y vuelve a su escala real (no 1,1: usa setDisplaySize)
+    jugador.setScale(0.2);
+    this.tweens.add({
+      targets: jugador,
+      scaleX: jugador.escalaBase.x,
+      scaleY: jugador.escalaBase.y,
+      duration: 250,
+      ease: "Back.easeOut",
+    });
+
+    // Destello de cámara
+    this.cameras.main.flash(120, 60, 160, 255);
+  }
+
   impactoJugador(a, b) {
     const bala = a.disparar ? a : b;
     const victima = a.disparar ? b : a;
@@ -232,6 +281,7 @@ class Level2 extends Phaser.Scene {
     this.cameras.main.shake(250, 0.012);
     this.cameras.main.flash(120, 255, 80, 80);
     this.audio?.reproducir("explosion");
+    this.explosionMuerte(victima.x, victima.y);
     victima.disableBody(true, true);
     bala.desactivar();
 
