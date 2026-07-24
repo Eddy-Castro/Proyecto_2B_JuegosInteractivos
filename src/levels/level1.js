@@ -122,15 +122,7 @@ class Level1 extends Phaser.Scene {
     this.panelAzul.setMarcador(this.registry.get("scoreAzul") || 0);
 
     // Marcador de rondas para ganar, centrado arriba
-    this.add
-      .text(anchoPantalla / 2, 26, "PRIMERO A 5 RONDAS", {
-        fontSize: "15px",
-        fontFamily: "monospace",
-        color: "#8b949e",
-      })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
-      .setDepth(100);
+    crearRotuloSuperior(this, "PRIMERO A 5 RONDAS");
   }
 
   update() {

@@ -79,6 +79,34 @@ class BarraCooldown {
   }
 }
 
+/**
+ * Rótulo centrado arriba (p. ej. "PRIMERO A 5 RONDAS").
+ * Lleva panel oscuro detrás: sin él el texto gris se pierde sobre el suelo claro.
+ */
+function crearRotuloSuperior(scene, texto) {
+  const cx = scene.cameras.main.width / 2;
+  const D = HUD_PROFUNDIDAD;
+
+  const etiqueta = scene.add
+    .text(cx, 34, texto, {
+      fontSize: "17px",
+      fontFamily: "Arial Black",
+      color: "#ffd9a0",
+    })
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(D + 2);
+
+  const fondo = scene.add
+    .rectangle(cx, 34, etiqueta.width + 44, 34, 0x0d1117, 0.82)
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(D + 1)
+    .setStrokeStyle(1, 0xff8c1a, 0.65);
+
+  return { etiqueta, fondo };
+}
+
 class PanelJugador {
   /**
    * @param {object} o

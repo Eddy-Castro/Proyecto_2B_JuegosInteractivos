@@ -15,9 +15,12 @@ class Bala extends Phaser.Physics.Arcade.Sprite {
 
     this.setActive(true);
     this.setVisible(true);
-    this.setPosition(x, y);
-    this.setVelocity(0, 0);
     this.setScale(2);
+
+    // Reactivar el cuerpo (desactivar() lo apaga) y recolocarlo: body.reset()
+    // mueve cuerpo y sprite a la vez y deja la velocidad a cero.
+    this.body.enable = true;
+    this.body.reset(x, y);
 
     this.scene.physics.velocityFromRotation(angulo, 300, this.body.velocity);
 
@@ -44,6 +47,11 @@ class Bala extends Phaser.Physics.Arcade.Sprite {
     this.setActive(false);
     this.setVisible(false);
     this.body.stop();
+
+    // CLAVE: apagar también el cuerpo físico. Si solo se oculta el sprite, el
+    // body sigue vivo y aparcado donde impactó, así que cualquier tanque que
+    // pase por ahí choca con una bala invisible y muere sin motivo aparente.
+    this.body.enable = false;
 
     if (this.tiempoVida) {
       this.tiempoVida.remove();

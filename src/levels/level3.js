@@ -78,15 +78,12 @@ class Level3 extends Phaser.Scene {
     this.jugador = new TanqueVerde(this, spawnA.x, spawnA.y, "tanque_verde", "wasd");
     this.jugador1 = new TanqueVerde(this, spawnB.x, spawnB.y, "tanque_verde", "flechas");
 
-    // Los tanques son idénticos (misma facción): un anillo de color bajo
-    // cada uno los distingue sin tocar setTint(), que ya usan el barro y
-    // las minas para señalizar su propio estado (ver nota de G2 al respecto).
-    this.marcador1 = this.add.circle(spawnA.x, spawnA.y, 24, 0x2ecc71, 0)
-      .setStrokeStyle(3, 0x2ecc71, 1)
-      .setDepth(1);
-    this.marcador2 = this.add.circle(spawnB.x, spawnB.y, 24, 0xffaa33, 0)
-      .setStrokeStyle(3, 0xffaa33, 1)
-      .setDepth(1);
+    // Los dos tanques son idénticos (misma facción), así que hace falta algo
+    // que los distinga. No se puede usar setTint(): el barro y las minas ya lo
+    // usan para señalizar su estado y se pisarían. Se usa un pequeño triángulo
+    // flotando POR ENCIMA del tanque, que no tapa el sprite.
+    this.marcador1 = this.crearMarcador(0x2ecc71);
+    this.marcador2 = this.crearMarcador(0xffc266);
 
     // --- CÁMARA Y LÍMITES (usar el tamaño real del mapa, no un valor fijo) ---
     this.physics.world.setBounds(0, 0, this.mapa.widthInPixels, this.mapa.heightInPixels);
@@ -119,26 +116,21 @@ class Level3 extends Phaser.Scene {
     this.panel1.setMarcador(this.registry.get("scoreVerde1") || 0);
     this.panel2.setMarcador(this.registry.get("scoreVerde2") || 0);
 
-    this.add
-      .text(anchoPantalla / 2, 26, "PRIMERO A 5 RONDAS", {
-        fontSize: "15px",
-        fontFamily: "monospace",
-        color: "#8b949e",
-      })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
-      .setDepth(100);
+    crearRotuloSuperior(this, "PRIMERO A 5 RONDAS");
   }
 
   update() {
     if (this.jugador && this.jugador.active) {
       this.jugador.actualizar();
-      this.marcador1.setPosition(this.jugador.x, this.jugador.y);
+      this.situarMarcador(this.marcador1, this.jugador);
     }
     if (this.jugador1 && this.jugador1.active) {
       this.jugador1.actualizar();
-      this.marcador2.setPosition(this.jugador1.x, this.jugador1.y);
+      this.situarMarcador(this.marcador2, this.jugador1);
     }
+    // Ocultar el indicador de un tanque destruido
+    this.marcador1.setVisible(!!this.jugador?.active);
+    this.marcador2.setVisible(!!this.jugador1?.active);
     this.gestionarBarro();
 
     const progreso = (t) => {
@@ -204,6 +196,21 @@ class Level3 extends Phaser.Scene {
       null,
       this,
     );
+  }
+
+  /** Triángulo indicador que flota sobre un tanque para identificar al jugador. */
+  crearMarcador(color) {
+    return this.add
+      .triangle(0, 0, 0, 0, 15, 0, 7.5, 12, color)
+      .setOrigin(0.5, 0.5)
+      .setDepth(60)
+      .setStrokeStyle(2, 0x0d1117, 0.9);
+  }
+
+  /** Sitúa el indicador sobre el tanque, con un vaivén suave. */
+  situarMarcador(marcador, tanque) {
+    marcador.x = tanque.x;
+    marcador.y = tanque.y - 42 + Math.sin(this.time.now / 260) * 3;
   }
 
   pisarMina(jugador, mina) {
