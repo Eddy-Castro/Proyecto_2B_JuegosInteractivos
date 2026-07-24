@@ -24,8 +24,9 @@ class AudioManager {
   }
 
   alternarSilencio() {
+    // No toca scene.sound.mute: ese flag es global al SoundManager del juego
+    // y silenciaría también la música de MusicManager (P y O deben ser independientes).
     this.silenciado = !this.silenciado;
-    this.scene.sound.mute = this.silenciado;
     return this.silenciado;
   }
 }

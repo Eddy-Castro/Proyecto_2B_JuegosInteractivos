@@ -20,9 +20,14 @@ class BootScene extends Phaser.Scene {
     ["disparo", "rebote", "explosion", "habilidad", "portal", "mina", "ronda"].forEach((k) =>
       this.load.audio(k, `resources/audio/${k}.ogg`),
     );
+
+    ["musica_menu", "musica_nivel1", "musica_nivel2", "musica_nivel3"].forEach((k) =>
+      this.load.audio(k, `resources/audio/${k}.ogg`),
+    );
   }
 
   create() {
+    this.game.musica = new MusicManager(this.game);
     this.scene.start("MenuScene");
   }
 }

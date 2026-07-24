@@ -33,6 +33,16 @@ class Level3 extends Phaser.Scene {
       console.log(s ? "Audio silenciado" : "Audio activado");
     });
 
+    this.game.musica?.reproducir("musica_nivel3");
+
+    this.input.keyboard.on("keydown-O", () => {
+      const m = this.game.musica;
+      if (!m) return;
+      m.volumen = m.volumen > 0 ? 0 : 0.35;
+      m.pistaActual?.setVolume(m.volumen);
+      console.log(m.volumen > 0 ? "Música activada" : "Música silenciada");
+    });
+
     // --- CONSTRUCCIÓN DEL MAPA ---
     this.mapa = this.make.tilemap({ key: "mapa_nivel3" });
 

@@ -8,6 +8,16 @@ class MenuScene extends Phaser.Scene {
       if (this.sound.context.state === "suspended") this.sound.context.resume();
     });
 
+    this.game.musica?.reproducir("musica_menu");
+
+    this.input.keyboard.on("keydown-O", () => {
+      const m = this.game.musica;
+      if (!m) return;
+      m.volumen = m.volumen > 0 ? 0 : 0.35;
+      m.pistaActual?.setVolume(m.volumen);
+      console.log(m.volumen > 0 ? "Música activada" : "Música silenciada");
+    });
+
     const cx = this.scale.width / 2; // 640
     const cy = this.scale.height / 2; // 480
 
@@ -51,7 +61,7 @@ class MenuScene extends Phaser.Scene {
         "CONTROLES\n" +
           "ROJO:  W A S D  ·  ESPACIO disparar  ·  E muro\n" +
           "AZUL:  ↑ ← ↓ →  ·  M disparar  ·  N dash\n" +
-          "ESC: volver al menú  ·  P: silenciar audio",
+          "ESC: volver al menú  ·  P: silenciar SFX  ·  O: silenciar música",
         { fontSize: "20px", fill: "#aaaaaa", align: "center", lineSpacing: 8 },
       )
       .setOrigin(0.5);

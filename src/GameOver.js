@@ -7,6 +7,16 @@ class GameOverScene extends Phaser.Scene {
     const cx = this.scale.width / 2; // 640
     const cy = this.scale.height / 2; // 480
 
+    this.game.musica?.reproducir("musica_menu");
+
+    this.input.keyboard.on("keydown-O", () => {
+      const m = this.game.musica;
+      if (!m) return;
+      m.volumen = m.volumen > 0 ? 0 : 0.35;
+      m.pistaActual?.setVolume(m.volumen);
+      console.log(m.volumen > 0 ? "Música activada" : "Música silenciada");
+    });
+
     const ganador = this.registry.get("ganador");
     const r = this.registry.get("scoreRojo") || 0;
     const a = this.registry.get("scoreAzul") || 0;
