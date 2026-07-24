@@ -3,17 +3,7 @@ class Level1 extends Phaser.Scene {
     super({ key: "Level1" });
   }
 
-  preload() {
-    this.load.image(
-      "tiles_nivel1",
-      "resources/img/spritesheet-tiles-default.png",
-    );
-    this.load.tilemapTiledJSON("mapa_nivel1", "resources/maps/mapa_nuevo.json");
-    this.load.image("tanque_rojo", "resources/img/tanqueRojo.png");
-    this.load.image("tanque_azul", "resources/img/tanqueAzul.png");
-    this.load.image("caja_destructible", "resources/img/caja.png");
-    this.load.image("muro_habilidad", "resources/img/muro.png");
-  }
+  // Sin preload(): todos los assets se cargan una sola vez en BootScene.
 
   create() {
     this.audio = new AudioManager(this);
@@ -24,7 +14,6 @@ class Level1 extends Phaser.Scene {
     this.azulMuerto = false;
 
     this.input.keyboard.once("keydown-ESC", () => {
-      this.scene.stop("UIScene");
       this.scene.start("MenuScene");
     });
 
@@ -47,7 +36,7 @@ class Level1 extends Phaser.Scene {
     const mapa = this.make.tilemap({ key: "mapa_nivel1" });
     const tileset = mapa.addTilesetImage(
       "spritesheet-tiles-default",
-      "tiles_nivel1",
+      "tiles",
       64,
       64,
       0,
@@ -64,8 +53,6 @@ class Level1 extends Phaser.Scene {
     // --- OBJETOS DE ESCENA ---
     this.muros = this.physics.add.staticGroup();
     this.cajas = this.physics.add.staticGroup();
-    this.cajas.create(300, 300, "caja_destructible");
-    this.cajas.create(500, 200, "caja_destructible");
 
     // --- JUGADOR 1 (ROJO) ---
     const puntoSpawnRojo = obtenerPuntoSpawnValido(mapa, this.capaParedes);
@@ -90,6 +77,19 @@ class Level1 extends Phaser.Scene {
       "tanque_azul",
     );
 
+    // --- COBERTURA DESTRUCTIBLE ---
+    // Se colocan sobre tiles LIBRES verificados y separadas de ambos spawns.
+    // (Antes eran coordenadas fijas y una caía dentro de una pared.)
+    obtenerPuntosLibresDispersos(
+      mapa,
+      this.capaParedes,
+      4,
+      [puntoSpawnRojo, puntoSpawnAzul],
+      150,
+    ).forEach((p) => {
+      this.cajas.create(p.x, p.y, "caja_destructible").setDisplaySize(48, 48).refreshBody();
+    });
+
     // --- CÁMARA Y LÍMITES ---
     this.physics.world.setBounds(0, 0, mapa.widthInPixels, mapa.heightInPixels);
     this.cameras.main.setBounds(0, 0, mapa.widthInPixels, mapa.heightInPixels);
@@ -98,64 +98,39 @@ class Level1 extends Phaser.Scene {
     // --- SISTEMA DE COLISIONES LIMPIO ---
     this.configurarColisiones();
 
-    // ==========================================
     // --- INTERFAZ DE USUARIO (HUD) ---
-    // ==========================================
-
-    // 1. Leemos el score actual del registro global
-    const scoreRojo = this.registry.get("scoreRojo") || 0;
-    const scoreAzul = this.registry.get("scoreAzul") || 0;
-
-    // 2. Obtenemos el ancho visible de la cámara para alinear el HUD azul a la derecha
     const anchoPantalla = this.cameras.main.width;
 
-    // --- MARCADOR ROJO (Izquierda) ---
-    this.add
-      .image(60, 60, "tanque_rojo")
-      .setScale(0.15) // Hacemos el tanque más pequeño para que sea un ícono
-      .setAngle(-90) // (Opcional) Lo rotamos para que apunte hacia el texto
-      .setScrollFactor(0) // ¡LA CLAVE! Lo ancla a la cámara
-      .setDepth(100); // Lo pone por encima de las balas y paredes
+    this.panelRojo = new PanelJugador(this, {
+      x: 18,
+      y: 18,
+      color: 0xff3b30,
+      textura: "tanque_rojo",
+      nombre: "JUGADOR 1 · MURO",
+      alineacion: "izquierda",
+    });
+    this.panelAzul = new PanelJugador(this, {
+      x: anchoPantalla - 18,
+      y: 18,
+      color: 0x3d8bff,
+      textura: "tanque_azul",
+      nombre: "DASH · JUGADOR 2",
+      alineacion: "derecha",
+    });
 
+    this.panelRojo.setMarcador(this.registry.get("scoreRojo") || 0);
+    this.panelAzul.setMarcador(this.registry.get("scoreAzul") || 0);
+
+    // Marcador de rondas para ganar, centrado arriba
     this.add
-      .text(120, 35, `${scoreRojo}`, {
-        fontSize: "48px",
-        fill: "#ff3333",
-        fontFamily: "Arial Black",
-        stroke: "#000000", // Borde negro para que resalte sobre el mapa
-        strokeThickness: 6,
+      .text(anchoPantalla / 2, 26, "PRIMERO A 5 RONDAS", {
+        fontSize: "15px",
+        fontFamily: "monospace",
+        color: "#8b949e",
       })
+      .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(100);
-
-    // --- MARCADOR AZUL (Derecha) ---
-    this.add
-      .image(anchoPantalla - 60, 60, "tanque_azul")
-      .setScale(0.15)
-      .setAngle(90)
-      .setScrollFactor(0)
-      .setDepth(100);
-
-    // En el texto azul restamos un poco más de 'X' para que el número no tape al ícono
-    this.add
-      .text(anchoPantalla - 150, 35, `${scoreAzul}`, {
-        fontSize: "48px",
-        fill: "#3366ff",
-        fontFamily: "Arial Black",
-        stroke: "#000000",
-        strokeThickness: 6,
-      })
-      .setScrollFactor(0)
-      .setDepth(100);
-
-    // --- BARRAS DE COOLDOWN ---
-    this.barraRojo = new BarraCooldown(this, 30, 110, 0xff3333);
-    this.barraAzul = new BarraCooldown(
-      this,
-      this.cameras.main.width - 150,
-      110,
-      0x3366ff,
-    );
   }
 
   update() {
@@ -170,8 +145,8 @@ class Level1 extends Phaser.Scene {
       const restante = tanque.tiempoHabilidad - this.time.now;
       return restante <= 0 ? 1 : 1 - restante / duracionMs;
     };
-    if (this.jugador?.active) this.barraRojo.actualizar(progreso(this.jugador, 10000));
-    if (this.jugador1?.active) this.barraAzul.actualizar(progreso(this.jugador1, 3000));
+    if (this.jugador?.active) this.panelRojo.actualizarCooldown(progreso(this.jugador, 10000));
+    if (this.jugador1?.active) this.panelAzul.actualizarCooldown(progreso(this.jugador1, 3000));
   }
 
   configurarColisiones() {
@@ -385,8 +360,16 @@ class Level1 extends Phaser.Scene {
 
     const META = 5;
     if (scoreRojo >= META || scoreAzul >= META) {
-      this.registry.set("ganador", scoreRojo >= META ? "ROJO" : "AZUL");
-      this.scene.stop("UIScene");
+      const ganaRojo = scoreRojo >= META;
+      this.registry.set("ganador", ganaRojo ? "ROJO" : "AZUL");
+      this.registry.set("resultado", {
+        ganador: ganaRojo ? "IMPERIO DE HIERRO" : "SINDICATO DE NEÓN",
+        colorGanador: ganaRojo ? "#ff5a4f" : "#5aa0ff",
+        jugadores: [
+          { nombre: "JUGADOR 1 · ROJO", score: scoreRojo, css: "#ff5a4f", textura: "tanque_rojo" },
+          { nombre: "JUGADOR 2 · AZUL", score: scoreAzul, css: "#5aa0ff", textura: "tanque_azul" },
+        ],
+      });
       this.scene.start("GameOverScene");
       return;
     }

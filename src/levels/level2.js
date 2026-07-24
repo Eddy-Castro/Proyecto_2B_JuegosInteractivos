@@ -5,16 +5,7 @@ class Level2 extends Phaser.Scene {
     super({ key: "Level2" });
   }
 
-  preload() {
-    this.load.image(
-      "tiles_nivel2",
-      "resources/img/spritesheet-tiles-default.png",
-    );
-    this.load.tilemapTiledJSON("mapa_nivel2", "resources/maps/mapa2.json");
-    this.load.image("tanque_rojo", "resources/img/tanqueRojo.png");
-    this.load.image("tanque_azul", "resources/img/tanqueAzul.png");
-    this.load.image("portal", "resources/img/portal.png");
-  }
+  // Sin preload(): todos los assets se cargan una sola vez en BootScene.
 
   create() {
     this.audio = new AudioManager(this);
@@ -25,7 +16,6 @@ class Level2 extends Phaser.Scene {
     this.azulMuerto = false;
 
     this.input.keyboard.once("keydown-ESC", () => {
-      this.scene.stop("UIScene");
       this.scene.start("MenuScene");
     });
 
@@ -50,7 +40,7 @@ class Level2 extends Phaser.Scene {
     if (mapa.tilesets.length > 0) {
       const tileset = mapa.addTilesetImage(
         "spritesheet-tiles-default",
-        "tiles_nivel2",
+        "tiles",
         64,
         64,
         0,
@@ -99,44 +89,25 @@ class Level2 extends Phaser.Scene {
     // --- SISTEMA DE COLISIONES ---
     this.configurarColisiones();
 
-    // --- HUD DE PUNTUACIÓN (mismo patrón que el Nivel 1) ---
-    const scoreRojo = this.registry.get("scoreRojo") || 0;
-    const scoreAzul = this.registry.get("scoreAzul") || 0;
+    // --- HUD DE PUNTUACIÓN ---
     const anchoPantalla = this.cameras.main.width;
 
-    this.add
-      .image(60, 60, "tanque_rojo")
-      .setScale(0.15)
-      .setAngle(-90)
-      .setScrollFactor(0)
-      .setDepth(100);
-    this.add
-      .text(120, 35, `${scoreRojo}`, {
-        fontSize: "48px",
-        fill: "#ff3333",
-        fontFamily: "Arial Black",
-        stroke: "#000000",
-        strokeThickness: 6,
-      })
-      .setScrollFactor(0)
-      .setDepth(100);
+    this.panelRojo = new PanelJugador(this, {
+      x: 18, y: 18, color: 0xff3b30, textura: "tanque_rojo",
+      nombre: "JUGADOR 1 · MURO", alineacion: "izquierda",
+    });
+    this.panelAzul = new PanelJugador(this, {
+      x: anchoPantalla - 18, y: 18, color: 0x3d8bff, textura: "tanque_azul",
+      nombre: "DASH · JUGADOR 2", alineacion: "derecha",
+    });
+    this.panelRojo.setMarcador(this.registry.get("scoreRojo") || 0);
+    this.panelAzul.setMarcador(this.registry.get("scoreAzul") || 0);
 
     this.add
-      .image(anchoPantalla - 60, 60, "tanque_azul")
-      .setScale(0.15)
-      .setAngle(90)
-      .setScrollFactor(0)
-      .setDepth(100);
-    this.add
-      .text(anchoPantalla - 150, 35, `${scoreAzul}`, {
-        fontSize: "48px",
-        fill: "#3366ff",
-        fontFamily: "Arial Black",
-        stroke: "#000000",
-        strokeThickness: 6,
+      .text(anchoPantalla / 2, 26, "PRIMERO A 5 RONDAS", {
+        fontSize: "15px", fontFamily: "monospace", color: "#8b949e",
       })
-      .setScrollFactor(0)
-      .setDepth(100);
+      .setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
   }
 
   update() {
@@ -146,6 +117,13 @@ class Level2 extends Phaser.Scene {
     if (this.jugador1 && this.jugador1.active) {
       this.jugador1.actualizar();
     }
+
+    const progreso = (tanque, duracionMs) => {
+      const restante = tanque.tiempoHabilidad - this.time.now;
+      return restante <= 0 ? 1 : 1 - restante / duracionMs;
+    };
+    if (this.jugador?.active) this.panelRojo.actualizarCooldown(progreso(this.jugador, 10000));
+    if (this.jugador1?.active) this.panelAzul.actualizarCooldown(progreso(this.jugador1, 3000));
   }
 
   configurarColisiones() {
@@ -306,9 +284,27 @@ class Level2 extends Phaser.Scene {
     if (this.rojoMuerto && this.azulMuerto) {
       console.log("¡Empate! Ambos fueron destruidos.");
     } else if (this.rojoMuerto) {
-      this.registry.set("scoreAzul", scoreAzul + 1);
+      scoreAzul += 1;
+      this.registry.set("scoreAzul", scoreAzul);
     } else if (this.azulMuerto) {
-      this.registry.set("scoreRojo", scoreRojo + 1);
+      scoreRojo += 1;
+      this.registry.set("scoreRojo", scoreRojo);
+    }
+
+    const META = 5;
+    if (scoreRojo >= META || scoreAzul >= META) {
+      const ganaRojo = scoreRojo >= META;
+      this.registry.set("ganador", ganaRojo ? "ROJO" : "AZUL");
+      this.registry.set("resultado", {
+        ganador: ganaRojo ? "IMPERIO DE HIERRO" : "SINDICATO DE NEÓN",
+        colorGanador: ganaRojo ? "#ff5a4f" : "#5aa0ff",
+        jugadores: [
+          { nombre: "JUGADOR 1 · ROJO", score: scoreRojo, css: "#ff5a4f", textura: "tanque_rojo" },
+          { nombre: "JUGADOR 2 · AZUL", score: scoreAzul, css: "#5aa0ff", textura: "tanque_azul" },
+        ],
+      });
+      this.scene.start("GameOverScene");
+      return;
     }
 
     this.scene.restart();

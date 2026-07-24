@@ -11,7 +11,7 @@ const config = {
     default: "arcade",
     arcade: { gravity: { y: 0 }, debug: false },
   },
-  scene: [BootScene, MenuScene, Level1, Level2, Level3, UIScene, GameOverScene],
+  scene: [BootScene, MenuScene, Level1, Level2, Level3, GameOverScene],
 };
 
 const game = new Phaser.Game(config);

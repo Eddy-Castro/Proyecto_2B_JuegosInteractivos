@@ -5,15 +5,7 @@ class Level3 extends Phaser.Scene {
     super({ key: "Level3" });
   }
 
-  preload() {
-    this.load.image(
-      "tiles_nivel3",
-      "resources/img/spritesheet-tiles-default.png",
-    );
-    this.load.tilemapTiledJSON("mapa_nivel3", "resources/maps/mapa3.json");
-    this.load.image("tanque_verde", "resources/img/tanqueVerde.png");
-    this.load.image("mina", "resources/img/mina.png");
-  }
+  // Sin preload(): todos los assets se cargan una sola vez en BootScene.
 
   create() {
     this.audio = new AudioManager(this);
@@ -24,7 +16,6 @@ class Level3 extends Phaser.Scene {
     this.muerto2 = false;
 
     this.input.keyboard.once("keydown-ESC", () => {
-      this.scene.stop("UIScene");
       this.scene.start("MenuScene");
     });
 
@@ -52,7 +43,7 @@ class Level3 extends Phaser.Scene {
     if (this.mapa.tilesets.length > 0) {
       const tileset = this.mapa.addTilesetImage(
         "spritesheet-tiles-default",
-        "tiles_nivel3",
+        "tiles",
         64,
         64,
         0,
@@ -106,43 +97,35 @@ class Level3 extends Phaser.Scene {
     this.configurarColisiones();
 
     // --- HUD DE PUNTUACIÓN ---
-    const scoreVerde1 = this.registry.get("scoreVerde1") || 0;
-    const scoreVerde2 = this.registry.get("scoreVerde2") || 0;
     const anchoPantalla = this.cameras.main.width;
 
-    this.add
-      .image(60, 60, "tanque_verde")
-      .setScale(0.15)
-      .setAngle(-90)
-      .setTint(0x2ecc71)
-      .setScrollFactor(0)
-      .setDepth(100);
-    this.add
-      .text(120, 35, `${scoreVerde1}`, {
-        fontSize: "48px",
-        fill: "#2ecc71",
-        fontFamily: "Arial Black",
-        stroke: "#000000",
-        strokeThickness: 6,
-      })
-      .setScrollFactor(0)
-      .setDepth(100);
+    this.panel1 = new PanelJugador(this, {
+      x: 18,
+      y: 18,
+      color: 0x2ecc71,
+      textura: "tanque_verde",
+      nombre: "JUGADOR 1 · MINA",
+      alineacion: "izquierda",
+    });
+    this.panel2 = new PanelJugador(this, {
+      x: anchoPantalla - 18,
+      y: 18,
+      color: 0xffaa33,
+      textura: "tanque_verde",
+      nombre: "MINA · JUGADOR 2",
+      alineacion: "derecha",
+    });
+
+    this.panel1.setMarcador(this.registry.get("scoreVerde1") || 0);
+    this.panel2.setMarcador(this.registry.get("scoreVerde2") || 0);
 
     this.add
-      .image(anchoPantalla - 60, 60, "tanque_verde")
-      .setScale(0.15)
-      .setAngle(90)
-      .setTint(0xffaa33)
-      .setScrollFactor(0)
-      .setDepth(100);
-    this.add
-      .text(anchoPantalla - 150, 35, `${scoreVerde2}`, {
-        fontSize: "48px",
-        fill: "#ffaa33",
-        fontFamily: "Arial Black",
-        stroke: "#000000",
-        strokeThickness: 6,
+      .text(anchoPantalla / 2, 26, "PRIMERO A 5 RONDAS", {
+        fontSize: "15px",
+        fontFamily: "monospace",
+        color: "#8b949e",
       })
+      .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(100);
   }
@@ -157,6 +140,13 @@ class Level3 extends Phaser.Scene {
       this.marcador2.setPosition(this.jugador1.x, this.jugador1.y);
     }
     this.gestionarBarro();
+
+    const progreso = (t) => {
+      const restante = t.tiempoHabilidad - this.time.now;
+      return restante <= 0 ? 1 : 1 - restante / t.cooldownMina;
+    };
+    if (this.jugador?.active) this.panel1.actualizarCooldown(progreso(this.jugador));
+    if (this.jugador1?.active) this.panel2.actualizarCooldown(progreso(this.jugador1));
   }
 
   configurarColisiones() {
@@ -280,9 +270,27 @@ class Level3 extends Phaser.Scene {
     if (this.muerto1 && this.muerto2) {
       console.log("¡Empate! Ambos fueron destruidos.");
     } else if (this.muerto1) {
-      this.registry.set("scoreVerde2", scoreVerde2 + 1);
+      scoreVerde2 += 1;
+      this.registry.set("scoreVerde2", scoreVerde2);
     } else if (this.muerto2) {
-      this.registry.set("scoreVerde1", scoreVerde1 + 1);
+      scoreVerde1 += 1;
+      this.registry.set("scoreVerde1", scoreVerde1);
+    }
+
+    const META = 5;
+    if (scoreVerde1 >= META || scoreVerde2 >= META) {
+      const gana1 = scoreVerde1 >= META;
+      this.registry.set("ganador", gana1 ? "JUGADOR 1" : "JUGADOR 2");
+      this.registry.set("resultado", {
+        ganador: gana1 ? "JUGADOR 1" : "JUGADOR 2",
+        colorGanador: gana1 ? "#4ade80" : "#ffc266",
+        jugadores: [
+          { nombre: "JUGADOR 1 · WASD", score: scoreVerde1, css: "#4ade80", textura: "tanque_verde" },
+          { nombre: "JUGADOR 2 · FLECHAS", score: scoreVerde2, css: "#ffc266", textura: "tanque_verde" },
+        ],
+      });
+      this.scene.start("GameOverScene");
+      return;
     }
 
     this.scene.restart();
