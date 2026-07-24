@@ -16,6 +16,8 @@ class Level1 extends Phaser.Scene {
   }
 
   create() {
+    this.audio = new AudioManager(this);
+
     // --- ESTADOS DE LA RONDA ---
     this.isResetting = false;
     this.rojoMuerto = false;
@@ -24,6 +26,11 @@ class Level1 extends Phaser.Scene {
     this.input.keyboard.once("keydown-ESC", () => {
       this.scene.stop("UIScene");
       this.scene.start("MenuScene");
+    });
+
+    this.input.keyboard.on("keydown-P", () => {
+      const s = this.audio.alternarSilencio();
+      console.log(s ? "Audio silenciado" : "Audio activado");
     });
 
     // --- CONSTRUCCIÓN DEL MAPA ---
@@ -284,6 +291,7 @@ class Level1 extends Phaser.Scene {
     // Efectos de destrucción
     this.cameras.main.shake(250, 0.012);
     this.cameras.main.flash(120, 255, 80, 80);
+    this.audio?.reproducir("explosion");
     victima.disableBody(true, true);
     bala.desactivar();
 
@@ -323,6 +331,7 @@ class Level1 extends Phaser.Scene {
   }
 
   evaluarRonda() {
+    this.audio?.reproducir("ronda");
     let scoreRojo = this.registry.get("scoreRojo") || 0;
     let scoreAzul = this.registry.get("scoreAzul") || 0;
 

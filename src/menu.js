@@ -4,6 +4,10 @@ class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    this.input.once("pointerdown", () => {
+      if (this.sound.context.state === "suspended") this.sound.context.resume();
+    });
+
     const cx = this.scale.width / 2; // 640
     const cy = this.scale.height / 2; // 480
 
@@ -47,7 +51,7 @@ class MenuScene extends Phaser.Scene {
         "CONTROLES\n" +
           "ROJO:  W A S D  ·  ESPACIO disparar  ·  E muro\n" +
           "AZUL:  ↑ ← ↓ →  ·  M disparar  ·  N dash\n" +
-          "ESC: volver al menú",
+          "ESC: volver al menú  ·  P: silenciar audio",
         { fontSize: "20px", fill: "#aaaaaa", align: "center", lineSpacing: 8 },
       )
       .setOrigin(0.5);

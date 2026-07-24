@@ -155,6 +155,7 @@ class TanqueRojo extends TanqueBase {
       muro.rotation = Phaser.Math.Snap.To(anguloObjetivo, Math.PI / 2);
 
       this.scene.muros.add(muro);
+      this.scene.audio?.reproducir("habilidad");
 
       // Calculamos cuánto mide la imagen realmente en píxeles
       const anchoEscalado = muro.width * escalaLargo;
@@ -206,6 +207,7 @@ class TanqueAzul extends TanqueBase {
   activarDash() {
     if (this.scene.time.now > this.tiempoHabilidad) {
       this.esInvulnerable = true;
+      this.scene.audio?.reproducir("habilidad");
       this.scene.physics.velocityFromRotation(
         this.rotation,
         600,

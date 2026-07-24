@@ -16,6 +16,10 @@ class BootScene extends Phaser.Scene {
     });
 
     this.load.image("bala", "resources/img/bala.png");
+
+    ["disparo", "rebote", "explosion", "habilidad", "portal", "mina", "ronda"].forEach((k) =>
+      this.load.audio(k, `resources/audio/${k}.ogg`),
+    );
   }
 
   create() {
